@@ -105,7 +105,7 @@ function populateForm(data) {
   setInput('dob',                data.dob || '');
   setSelect('reason',            data.reason);
   setInput('email',              (data.email || '').toLowerCase().trim());
-  setInput('phone',              data.phone || '');
+  setInput('phone',              (data.phone || '').replace(/\s+/g, ''));
   setInput('position',           toTitleCase(data.position || ''));
 
   // Run all validations after populating
