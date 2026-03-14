@@ -19,6 +19,14 @@
 
     .scanner-section .panel-body { padding-bottom: 12px; }
 
+    /* Camera + buttons sit side-by-side, both centred vertically */
+    .scanner-layout {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 20px;
+    }
+
     /* Small 16:9 preview — matches native camera aspect ratio so the
        library's coordinate system is correct. No qrbox restriction means
        the full camera frame is used for detection. */
@@ -59,12 +67,18 @@
     #scan-placeholder { text-align: center; color: var(--gray-400); }
     #scan-placeholder .big-icon { font-size: 2.8rem; display:block; margin-bottom:6px; }
 
-    .scan-controls { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
+    /* Buttons stack vertically to the right of the camera */
+    .scan-controls {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      align-items: stretch;
+    }
 
     #scan-slot-info {
       font-size: .78rem;
       color: var(--gray-500);
-      margin-top: 8px;
+      margin-top: 10px;
       min-height: 18px;
       text-align: center;
     }
@@ -203,24 +217,26 @@
         <h2>QR Code Scanner</h2>
       </div>
       <div class="panel-body">
-        <div id="scanner-box">
-          <div id="scan-placeholder">
-            <span class="big-icon">⬛</span>
-            <p style="font-size:.875rem;color:var(--gray-500);">Camera is off — click <strong>Start Scan</strong> to begin</p>
+        <div class="scanner-layout">
+          <div id="scanner-box">
+            <div id="scan-placeholder">
+              <span class="big-icon">⬛</span>
+              <p style="font-size:.875rem;color:var(--gray-500);">Camera is off — click <strong>Start Scan</strong> to begin</p>
+            </div>
+            <div id="qr-reader"></div>
           </div>
-          <div id="qr-reader"></div>
-        </div>
 
-        <div class="scan-controls">
-          <button id="btn-start-scan" class="btn btn-primary btn-sm" onclick="startScan()">
-            ▶ Start Scan
-          </button>
-          <button id="btn-stop-scan" class="btn btn-outline btn-sm" onclick="stopScan()" disabled>
-            ■ Stop
-          </button>
-          <button class="btn btn-outline btn-sm" onclick="setCurrentTime()" title="Set queue to current system time">
-            🕐 Set Current Time
-          </button>
+          <div class="scan-controls">
+            <button id="btn-start-scan" class="btn btn-primary btn-sm" onclick="startScan()">
+              ▶ Start Scan
+            </button>
+            <button id="btn-stop-scan" class="btn btn-outline btn-sm" onclick="stopScan()" disabled>
+              ■ Stop
+            </button>
+            <button class="btn btn-outline btn-sm" onclick="setCurrentTime()" title="Set queue to current system time">
+              🕐 Set Current Time
+            </button>
+          </div>
         </div>
 
         <div id="scan-slot-info"></div>
