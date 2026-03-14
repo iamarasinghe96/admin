@@ -324,9 +324,6 @@
                     title="Capture the current frame and decode it — use when the QR is aligned">
               📸 Freeze &amp; Scan
             </button>
-            <button class="btn btn-outline btn-sm" onclick="setCurrentTime()" title="Set queue to current system time">
-              🕐 Set Current Time
-            </button>
           </div>
         </div><!-- /webcam-layout -->
 
@@ -339,11 +336,6 @@
               <input id="usb-input" type="text" autocomplete="off" spellcheck="false"
                      placeholder="Waiting for scanner…"/>
               <p id="usb-focus-hint">Click here if the scanner stops responding</p>
-            </div>
-            <div class="scan-controls">
-              <button class="btn btn-outline btn-sm" onclick="setCurrentTime()" title="Set queue to current system time">
-                🕐 Set Current Time
-              </button>
             </div>
           </div>
         </div><!-- /usb-scanner-ui -->
@@ -362,16 +354,23 @@
 
         <form id="applicant-form" onsubmit="return false;" autocomplete="off">
 
-          <!-- Row: Application Type -->
-          <div class="field" id="applicationType-wrap" style="margin-bottom:12px;">
-            <label for="applicationType">Application Type <span class="required">*</span></label>
-            <select id="applicationType">
-              <option value="">— Select —</option>
-              <option value="Permanent">Permanent</option>
-              <option value="Temporary">Temporary</option>
-              <option value="Other">Other</option>
-            </select>
-            <span class="field-msg" id="applicationType-msg"></span>
+          <!-- Row: Application Type + Time Slot -->
+          <div class="form-row-2" style="margin-bottom:12px;">
+            <div class="field" id="applicationType-wrap">
+              <label for="applicationType">Application Type <span class="required">*</span></label>
+              <select id="applicationType">
+                <option value="">— Select —</option>
+                <option value="Permanent">Permanent</option>
+                <option value="Temporary">Temporary</option>
+                <option value="Other">Other</option>
+              </select>
+              <span class="field-msg" id="applicationType-msg"></span>
+            </div>
+            <div class="field" id="timeSlot-wrap">
+              <label for="timeSlot">Time Slot <small style="font-weight:400;color:var(--gray-400)">(HH:MM)</small></label>
+              <input type="text" id="timeSlot" placeholder="e.g. 09:30" maxlength="5"/>
+              <span class="field-msg" id="timeSlot-msg"></span>
+            </div>
           </div>
 
           <!-- Names section -->
@@ -526,9 +525,6 @@
       <div class="queue-actions-row">
         <button class="btn btn-outline btn-sm" onclick="reAnnounce()" title="Re-play the current slot announcement">
           🔊 Re-announce
-        </button>
-        <button class="btn btn-outline btn-sm" onclick="setCurrentTime(); updateQueueStats();" title="Reset queue to current time">
-          🕐 Reset to Now
         </button>
       </div>
 

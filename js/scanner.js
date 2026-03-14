@@ -47,6 +47,7 @@ function beep() {
 
 /* ── Field IDs ────────────────────────────────────── */
 const FIELDS = [
+  'timeSlot',
   'applicationType','firstName','preferredFirstName',
   'middleName','lastName','dob','reason','email','phone','position'
 ];
@@ -115,6 +116,12 @@ function populateForm(data) {
     // If we fell back to Other, log it so it's easy to spot
     if (!match) console.log(`[QR] select #${id}: "${val}" not in options, set to Other`);
   };
+
+  // Time slot — parse the raw slot number to HH:MM for the field
+  if (data.slot) {
+    const parsed = parseSlotNumber(data.slot);
+    setInput('timeSlot', parsed ? parsed.time : '');
+  }
 
   setSelect('applicationType', data.applicationType);
   setInput('firstName',          toTitleCase(data.firstName || ''));
@@ -198,6 +205,25 @@ function setupLiveValidation() {
     });
     el.addEventListener('input', () => clearValidation(id));
   };
+
+  // Time slot — manual entry updates the queue
+  const timeSlotEl = document.getElementById('timeSlot');
+  if (timeSlotEl) {
+    timeSlotEl.addEventListener('blur', () => {
+      const val = timeSlotEl.value.trim();
+      if (!val) { clearValidation('timeSlot'); return; }
+      if (/^\d{1,2}:\d{2}$/.test(val)) {
+        const [hh, mm] = val.split(':');
+        const formatted = `${hh.padStart(2, '0')}:${mm}`;
+        timeSlotEl.value = formatted;
+        setNowServing(formatted, null);
+        setValid('timeSlot');
+      } else {
+        setError('timeSlot', 'Use HH:MM format e.g. 09:30');
+      }
+    });
+    timeSlotEl.addEventListener('input', () => clearValidation('timeSlot'));
+  }
 
   onBlurValidate('email', validateEmail);
   onBlurValidate('phone', validatePhone);
@@ -402,6 +428,10 @@ async function freezeAndScan() {
     onScanSuccess(decodedText);
 
   } catch (err) {
+    // If the continuous auto-scanner already succeeded during the await
+    // (scanning was set to false by freezeCamera inside onScanSuccess),
+    // silently ignore — the form is already populated.
+    if (!scanning) return;
     console.log('[QR] Freeze & Scan: no QR found in frame', err);
     video.play();                     // resume live preview
     if (btn) btn.disabled = false;    // re-enable for another try
@@ -582,16 +612,6 @@ function reAnnounce() {
   if (!currentSlot) { showToast('Nothing is being served yet.'); return; }
   announce(currentSlot);
   showToast('Announcing: ' + timeToWords(currentSlot.replace(':', '')));
-}
-
-/* ── Manual "Set Current Time" ───────────────────── */
-function setCurrentTime() {
-  const now = new Date();
-  const hh  = String(now.getHours()).padStart(2, '0');
-  const mm  = String(now.getMinutes()).padStart(2, '0');
-  const slot = generateSlotNumber();
-  setNowServing(`${hh}:${mm}`, slot);
-  showToast(`Queue set to current time: ${hh}:${mm}`);
 }
 
 /* ── USB Scanner Mode ─────────────────────────────── */
