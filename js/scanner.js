@@ -5,6 +5,7 @@
 /* ── State ────────────────────────────────────────── */
 let html5QrCode  = null;
 let scanning     = false;
+let usbMode      = false;
 let currentSlot  = null;   // "HH:MM" — Now Serving
 let queueSlots   = [];     // ["HH:MM", ...]  upcoming
 
@@ -409,9 +410,9 @@ async function freezeAndScan() {
 }
 
 function onScanSuccess(decodedText) {
-  if (!scanning) return;   // guard against duplicate fires
+  if (!scanning && !usbMode) return;   // guard against duplicate fires
   beep();
-  freezeCamera();
+  if (!usbMode) freezeCamera();
 
   console.log('[QR] raw decoded text:', decodedText);
 
@@ -593,9 +594,80 @@ function setCurrentTime() {
   showToast(`Queue set to current time: ${hh}:${mm}`);
 }
 
+/* ── USB Scanner Mode ─────────────────────────────── */
+function setMode(mode) {
+  const webcamLayout = document.getElementById('webcam-layout');
+  const usbUI        = document.getElementById('usb-scanner-ui');
+  const btnWebcam    = document.getElementById('btn-mode-webcam');
+  const btnUSB       = document.getElementById('btn-mode-usb');
+
+  if (mode === 'usb') {
+    usbMode = true;
+    if (scanning) stopScan();
+    webcamLayout.style.display = 'none';
+    usbUI.style.display        = 'block';
+    btnWebcam.classList.remove('active');
+    btnUSB.classList.add('active');
+    const input = document.getElementById('usb-input');
+    if (input) { input.value = ''; input.focus(); }
+    document.getElementById('usb-status-box').classList.add('usb-ready');
+  } else {
+    usbMode = false;
+    webcamLayout.style.display = '';
+    usbUI.style.display        = 'none';
+    btnWebcam.classList.add('active');
+    btnUSB.classList.remove('active');
+    document.getElementById('usb-status-box').classList.remove('usb-ready');
+  }
+}
+
+function processUSBScan(text) {
+  if (!text) return;
+
+  // Flash success on the USB status box
+  const box        = document.getElementById('usb-status-box');
+  const statusText = document.getElementById('usb-status-text');
+  const icon       = document.getElementById('usb-icon');
+  box.classList.add('usb-success');
+  icon.textContent        = '✓';
+  statusText.textContent  = 'Scan successful!';
+  setTimeout(() => {
+    box.classList.remove('usb-success');
+    icon.textContent       = '🔌';
+    statusText.textContent = 'Ready — pull the scanner trigger to scan';
+    document.getElementById('usb-input')?.focus();
+  }, 900);
+
+  onScanSuccess(text);
+}
+
+function setupUSBScanner() {
+  const input = document.getElementById('usb-input');
+  if (!input) return;
+
+  // Physical scanners type the decoded text then send Enter
+  input.addEventListener('keydown', e => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      const text = input.value.trim();
+      input.value = '';
+      if (text) processUSBScan(text);
+    }
+  });
+
+  // Visual cue when focused vs blurred
+  input.addEventListener('focus', () => {
+    document.getElementById('usb-focus-hint').textContent = 'Scanner connected — ready to scan';
+  });
+  input.addEventListener('blur', () => {
+    document.getElementById('usb-focus-hint').textContent = 'Click here if the scanner stops responding';
+  });
+}
+
 /* ── Init ─────────────────────────────────────────── */
 document.addEventListener('DOMContentLoaded', () => {
   setupLiveValidation();
+  setupUSBScanner();
 
   // Pre-load speech voices
   if (window.speechSynthesis) {
