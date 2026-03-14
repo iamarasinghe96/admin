@@ -8,6 +8,8 @@ let scanning     = false;
 let usbMode      = false;
 let currentSlot  = null;   // "HH:MM" — Now Serving
 let queueSlots   = [];     // ["HH:MM", ...]  upcoming
+let autoSkip     = false;  // auto-advance after each announcement cycle
+let _announceSeq = 0;      // invalidates stale announcement callbacks
 
 /* ── Beep (Web Audio API) ─────────────────────────── */
 function beep() {
@@ -593,29 +595,55 @@ function proceedToNext() {
   setTimeout(() => card.classList.remove('announcing'), 3500);
 }
 
-/* ── Text-to-speech announcement ─────────────────── */
+/* ── Text-to-speech announcement (repeats 3×) ────── */
 function announce(timeStr) {
   if (!window.speechSynthesis) return;
 
-  const hhmm = timeStr.replace(':', '');
-  const text  = timeToWords(hhmm);
-
+  const text = timeToWords(timeStr.replace(':', ''));
+  const seq  = ++_announceSeq;   // invalidates any in-flight cycle
   window.speechSynthesis.cancel();
 
-  // Short pause then speak
   setTimeout(() => {
-    const utter = new SpeechSynthesisUtterance(text);
-    utter.rate  = 0.88;
-    utter.pitch = 1.0;
-    utter.lang  = 'en-AU';
+    if (seq !== _announceSeq) return;
 
-    // Pick a clear voice if available
     const voices = window.speechSynthesis.getVoices();
     const pref   = voices.find(v => /en.*AU|en.*GB|en.*US/i.test(v.lang));
-    if (pref) utter.voice = pref;
+    let count = 0;
 
-    window.speechSynthesis.speak(utter);
+    function sayOnce() {
+      if (seq !== _announceSeq) return;
+      count++;
+      const utter = new SpeechSynthesisUtterance(text);
+      utter.rate  = 0.88;
+      utter.pitch = 1.0;
+      utter.lang  = 'en-AU';
+      if (pref) utter.voice = pref;
+      utter.onend = () => {
+        if (seq !== _announceSeq) return;
+        if (count < 3) {
+          setTimeout(sayOnce, 600);          // 600 ms gap between repeats
+        } else if (autoSkip) {
+          setTimeout(() => {
+            if (autoSkip && seq === _announceSeq) proceedToNext();
+          }, 900);                           // brief pause before advancing
+        }
+      };
+      window.speechSynthesis.speak(utter);
+    }
+
+    sayOnce();
   }, 300);
+}
+
+/* ── Auto-Skip toggle ─────────────────────────────── */
+function toggleAutoSkip() {
+  autoSkip = !autoSkip;
+  const btn = document.getElementById('btn-auto-skip');
+  if (btn) {
+    btn.textContent = autoSkip ? '⏭ Auto-Skip: ON' : '⏭ Auto-Skip: OFF';
+    btn.classList.toggle('btn-on', autoSkip);
+  }
+  showToast('Auto-Skip ' + (autoSkip ? 'ON' : 'OFF'));
 }
 
 /* ── Manual announce current slot ────────────────── */

@@ -249,6 +249,7 @@ select { cursor: pointer; }
 .btn-outline:hover { background: var(--gray-50); border-color: var(--gray-400); }
 
 .btn-sm { padding: 6px 12px; font-size: .8rem; }
+.btn-on { background: var(--success) !important; border-color: var(--success) !important; color: white !important; }
 .btn-lg { padding: 12px 24px; font-size: 1rem; }
 
 .btn-block { width: 100%; }
