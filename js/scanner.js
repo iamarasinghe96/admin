@@ -257,7 +257,7 @@ function legacyCopy(text) {
   document.body.removeChild(ta);
 }
 
-/* ── Clear form ───────────────────────────────────── */
+/* ── Clear form + reset scanner to initial state ──── */
 function clearForm() {
   FIELDS.forEach(id => {
     const el = document.getElementById(id);
@@ -265,6 +265,19 @@ function clearForm() {
     clearValidation(id);
   });
   document.getElementById('scan-slot-info').textContent = '';
+
+  // Fully stop the camera and restore the placeholder so the user
+  // can start a fresh scan for the next person.
+  stopScan();
+  const box = document.getElementById('scanner-box');
+  if (box && !document.getElementById('scan-placeholder')) {
+    const ph = document.createElement('div');
+    ph.id = 'scan-placeholder';
+    ph.innerHTML = '<span class="big-icon">⬛</span>'
+      + '<p style="font-size:.875rem;color:var(--gray-500);">Camera is off — click <strong>Start Scan</strong> to begin</p>';
+    box.appendChild(ph);
+  }
+  box?.classList.remove('success');
 }
 
 /* ─────────────────────────────────────────────────────
@@ -277,7 +290,7 @@ function startScan() {
 
   document.getElementById('scan-placeholder')?.remove();
   document.getElementById('btn-start-scan').disabled   = true;
-  document.getElementById('btn-stop-scan').disabled    = false;
+
   document.getElementById('btn-freeze-scan').disabled  = false;
   document.getElementById('scanner-box').classList.add('active');
 
@@ -309,7 +322,7 @@ function stopScan() {
   scanning = false;
 
   document.getElementById('btn-start-scan').disabled   = false;
-  document.getElementById('btn-stop-scan').disabled    = true;
+
   document.getElementById('btn-freeze-scan').disabled  = true;
   document.getElementById('scanner-box')?.classList.remove('active');
 }
@@ -323,7 +336,7 @@ function freezeCamera() {
   }
   scanning = false;
   document.getElementById('btn-start-scan').disabled   = false;
-  document.getElementById('btn-stop-scan').disabled    = true;
+
   document.getElementById('btn-freeze-scan').disabled  = true;
   document.getElementById('scanner-box')?.classList.remove('active');
 }
