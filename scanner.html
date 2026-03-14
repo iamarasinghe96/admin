@@ -5,6 +5,21 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Staff Interface — QR Queue System</title>
   <link rel="stylesheet" href="css/style.css"/>
+  <!-- Firebase -->
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script>
+  <script>
+    firebase.initializeApp({
+      apiKey:            "AIzaSyCqWX4sCXK2kissfWtqIQzn4aSoJGayXrM",
+      authDomain:        "qr-queue-system-7ef87.firebaseapp.com",
+      databaseURL:       "https://qr-queue-system-7ef87-default-rtdb.asia-southeast1.firebasedatabase.app",
+      projectId:         "qr-queue-system-7ef87",
+      storageBucket:     "qr-queue-system-7ef87.firebasestorage.app",
+      messagingSenderId: "150968717763",
+      appId:             "1:150968717763:web:cdfe5c90ce3c980a58ad76"
+    });
+  </script>
+
   <!-- QR Scanner library -->
   <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
   <script src="js/validator.js"></script>

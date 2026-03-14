@@ -12,8 +12,7 @@ let autoSkip     = false;  // auto-advance after each announcement cycle
 let _announceSeq = 0;      // invalidates stale announcement callbacks
 let _scannedCustomer = null; // last scanned customer data (sent to display)
 
-/* ── Customer display push (SSE server) ───────────── */
-const DISPLAY_SERVER = 'http://localhost:3000';
+/* ── Customer display push (Firebase Realtime Database) ── */
 const FORM_FIELD_IDS = [
   'applicationType','timeSlot','firstName','preferredFirstName',
   'middleName','lastName','dob','reason','email','phone','position'
@@ -37,11 +36,7 @@ function pushState(type, extra = {}) {
     formData: (type === 'editing') ? getFormData() : null,
     ...extra
   };
-  fetch(`${DISPLAY_SERVER}/push-state`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(state),
-  }).catch(() => { /* display server not running — silently ignore */ });
+  firebase.database().ref('queueState').set(state).catch(() => { /* silently ignore */ });
 }
 
 /* ── Beep (Web Audio API) ─────────────────────────── */

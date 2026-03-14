@@ -295,6 +295,10 @@
   </div>
 </main>
 
+<!-- Firebase -->
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script>
+
 <script>
 /* ── Field labels for customer card ── */
 const FIELD_LABELS = {
@@ -428,36 +432,31 @@ function applyState(state) {
   }
 }
 
-/* ── SSE connection ── */
-let evtSource = null;
-let reconnectTimer = null;
+/* ── Firebase connection ── */
+firebase.initializeApp({
+  apiKey:            "AIzaSyCqWX4sCXK2kissfWtqIQzn4aSoJGayXrM",
+  authDomain:        "qr-queue-system-7ef87.firebaseapp.com",
+  databaseURL:       "https://qr-queue-system-7ef87-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId:         "qr-queue-system-7ef87",
+  storageBucket:     "qr-queue-system-7ef87.firebasestorage.app",
+  messagingSenderId: "150968717763",
+  appId:             "1:150968717763:web:cdfe5c90ce3c980a58ad76"
+});
 
-function connect() {
-  if (evtSource) { evtSource.close(); evtSource = null; }
-  clearTimeout(reconnectTimer);
+const db = firebase.database();
 
-  evtSource = new EventSource('/events');
-
-  evtSource.onopen = () => {
+db.ref('.info/connected').on('value', (snap) => {
+  if (snap.val()) {
     connDot.classList.remove('offline');
-  };
-
-  evtSource.onmessage = (e) => {
-    try {
-      const state = JSON.parse(e.data);
-      applyState(state);
-    } catch { /* ignore */ }
-  };
-
-  evtSource.onerror = () => {
+  } else {
     connDot.classList.add('offline');
-    evtSource.close();
-    evtSource = null;
-    reconnectTimer = setTimeout(connect, 3000);
-  };
-}
+  }
+});
 
-connect();
+db.ref('queueState').on('value', (snapshot) => {
+  const state = snapshot.val();
+  if (state) applyState(state);
+});
 </script>
 </body>
 </html>
