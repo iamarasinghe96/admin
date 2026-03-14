@@ -276,8 +276,9 @@ function startScan() {
   if (!readerEl) return;
 
   document.getElementById('scan-placeholder')?.remove();
-  document.getElementById('btn-start-scan').disabled  = true;
-  document.getElementById('btn-stop-scan').disabled   = false;
+  document.getElementById('btn-start-scan').disabled   = true;
+  document.getElementById('btn-stop-scan').disabled    = false;
+  document.getElementById('btn-freeze-scan').disabled  = false;
   document.getElementById('scanner-box').classList.add('active');
 
   html5QrCode = new Html5Qrcode('qr-reader');
@@ -307,27 +308,77 @@ function stopScan() {
   }
   scanning = false;
 
-  document.getElementById('btn-start-scan').disabled  = false;
-  document.getElementById('btn-stop-scan').disabled   = true;
+  document.getElementById('btn-start-scan').disabled   = false;
+  document.getElementById('btn-stop-scan').disabled    = true;
+  document.getElementById('btn-freeze-scan').disabled  = true;
   document.getElementById('scanner-box')?.classList.remove('active');
 }
 
 function freezeCamera() {
-  // Pause the video feed visually — camera stays open but frame is frozen
   const video = document.querySelector('#qr-reader video');
   if (video) video.pause();
 
-  // Stop the html5QrCode scanning loop (releases CPU) but keep video element visible
   if (html5QrCode) {
     html5QrCode.stop().catch(() => {});
   }
   scanning = false;
-  document.getElementById('btn-start-scan').disabled = false;
-  document.getElementById('btn-stop-scan').disabled  = true;
+  document.getElementById('btn-start-scan').disabled   = false;
+  document.getElementById('btn-stop-scan').disabled    = true;
+  document.getElementById('btn-freeze-scan').disabled  = true;
   document.getElementById('scanner-box')?.classList.remove('active');
 }
 
+/* ── Freeze & Scan: capture current frame and decode it ── */
+async function freezeAndScan() {
+  if (!scanning) { showToast('Start the camera first.'); return; }
+
+  const video = document.querySelector('#qr-reader video');
+  if (!video || video.readyState < 2) { showToast('Camera not ready.'); return; }
+
+  const btn = document.getElementById('btn-freeze-scan');
+  if (btn) btn.disabled = true;
+
+  // Capture the current frame
+  const canvas = document.createElement('canvas');
+  canvas.width  = video.videoWidth;
+  canvas.height = video.videoHeight;
+  canvas.getContext('2d').drawImage(video, 0, 0);
+
+  // Freeze the preview so the user can see what was captured
+  video.pause();
+
+  try {
+    const blob = await new Promise((resolve, reject) => {
+      canvas.toBlob(b => b ? resolve(b) : reject(new Error('toBlob failed')), 'image/jpeg', 0.92);
+    });
+
+    const file = new File([blob], 'snap.jpg', { type: 'image/jpeg' });
+
+    // Temporary off-screen element required by html5-qrcode scanFile
+    let tempEl = document.getElementById('_qr_snap_tmp');
+    if (!tempEl) {
+      tempEl = document.createElement('div');
+      tempEl.id = '_qr_snap_tmp';
+      tempEl.style.cssText = 'position:fixed;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0);pointer-events:none;';
+      document.body.appendChild(tempEl);
+    }
+
+    const snap = new Html5Qrcode('_qr_snap_tmp');
+    const decodedText = await snap.scanFile(file, /* showImage */ false);
+
+    // Success — hand off to the normal success handler
+    onScanSuccess(decodedText);
+
+  } catch (err) {
+    console.log('[QR] Freeze & Scan: no QR found in frame', err);
+    video.play();                     // resume live preview
+    if (btn) btn.disabled = false;    // re-enable for another try
+    showToast('No QR found — try again.');
+  }
+}
+
 function onScanSuccess(decodedText) {
+  if (!scanning) return;   // guard against duplicate fires
   beep();
   freezeCamera();
 
