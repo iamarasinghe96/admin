@@ -280,10 +280,31 @@ function onScanSuccess(decodedText) {
   stopScan();
 
   let data;
-  try { data = JSON.parse(decodedText); }
-  catch {
-    showToast('Invalid QR code — expected JSON data.');
-    return;
+  try {
+    // Primary format: JSON (new registration app)
+    data = JSON.parse(decodedText);
+  } catch {
+    // Fallback: tab-separated format (legacy registration app)
+    // Format: slot\tappType\tfirstName\tprefFirstName\tmiddleName\tlastName\tDOB\treason\temail\tphone\tposition
+    const parts = decodedText.split('\t');
+    if (parts.length >= 10) {
+      data = {
+        slot:               parts[0] || '',
+        applicationType:    parts[1] || '',
+        firstName:          parts[2] || '',
+        preferredFirstName: parts[3] || '',
+        middleName:         parts[4] || '',
+        lastName:           parts[5] || '',
+        dob:                parts[6] || '',
+        reason:             parts[7] || '',
+        email:              parts[8] || '',
+        phone:              parts[9] || '',
+        position:           parts[10] || '',
+      };
+    } else {
+      showToast('Unrecognised QR code format.');
+      return;
+    }
   }
 
   // Flash success indicator

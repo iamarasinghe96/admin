@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+  <meta name="theme-color" content="#2563eb"/>
+  <title>Registration — QR Queue System</title>
+  <link rel="stylesheet" href="css/style.css"/>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <script src="js/validator.js"></script>
+  <script src="js/customer.js"></script>
+</head>
+<body>
+
+<div class="page">
+
+  <!-- Header -->
+  <div class="page-header">
+    <h1>QR Queue Registration</h1>
+    <p>Fill in your details to receive a QR code for your appointment slot.</p>
+  </div>
+
+  <!-- Step indicator -->
+  <div class="steps">
+    <div class="step active">
+      <div class="step-dot">1</div>
+      <span class="step-label">Details</span>
+    </div>
+    <div class="step">
+      <div class="step-dot">2</div>
+      <span class="step-label">Review</span>
+    </div>
+    <div class="step">
+      <div class="step-dot">3</div>
+      <span class="step-label">QR Code</span>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════
+       STEP 1 — Registration Form
+  ═══════════════════════════════════════ -->
+  <div class="step-section active" id="step-form">
+
+    <!-- Validation summary -->
+    <div class="error-summary" id="form-errors">
+      <p>Please fix the following before continuing:</p>
+      <ul id="form-errors-list"></ul>
+    </div>
+
+    <div class="card">
+      <h2>Application Type</h2>
+
+      <div class="field">
+        <label for="applicationType">Application Type <span class="req">*</span></label>
+        <div class="select-wrap">
+          <select id="applicationType" onchange="toggleOther(this,'applicationTypeOther')">
+            <option value="">— Select —</option>
+            <option value="Permanent">Permanent</option>
+            <option value="Temporary">Temporary</option>
+            <option value="Other">Other</option>
+          </select>
+        </div>
+        <span class="field-msg" id="applicationType-msg"></span>
+        <input
+          type="text"
+          id="applicationTypeOther"
+          class="other-input"
+          placeholder="Please specify…"
+          style="display:none"
+          aria-label="Other application type"
+        />
+        <span class="field-msg" id="applicationTypeOther-msg"></span>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Name Details</h2>
+
+      <div class="field">
+        <label for="firstName">First Name <span class="req">*</span></label>
+        <input
+          type="text"
+          id="firstName"
+          autocomplete="given-name"
+          inputmode="text"
+          placeholder="e.g. David"
+        />
+        <span class="field-msg" id="firstName-msg"></span>
+      </div>
+
+      <div class="field">
+        <label for="preferredFirstName">Preferred First Name</label>
+        <input
+          type="text"
+          id="preferredFirstName"
+          autocomplete="nickname"
+          placeholder="e.g. Dave (optional)"
+        />
+        <span class="field-msg" id="preferredFirstName-msg"></span>
+      </div>
+
+      <div class="field">
+        <label for="middleName">Middle Name</label>
+        <input
+          type="text"
+          id="middleName"
+          autocomplete="additional-name"
+          placeholder="Optional"
+        />
+        <span class="field-msg" id="middleName-msg"></span>
+      </div>
+
+      <div class="field">
+        <label for="lastName">Last Name <span class="req">*</span></label>
+        <input
+          type="text"
+          id="lastName"
+          autocomplete="family-name"
+          placeholder="e.g. Smith"
+        />
+        <span class="field-msg" id="lastName-msg"></span>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Personal Details</h2>
+
+      <div class="field">
+        <label for="dob">Date of Birth <span class="req">*</span>
+          <span style="font-weight:400;color:var(--gray-400);font-size:.78rem;">&nbsp;DD/MM/YYYY</span>
+        </label>
+        <input
+          type="text"
+          id="dob"
+          inputmode="numeric"
+          pattern="[0-9/]*"
+          maxlength="10"
+          placeholder="15/03/1985"
+          autocomplete="bday"
+          oninput="formatDOB(this)"
+        />
+        <span class="field-msg" id="dob-msg"></span>
+      </div>
+
+      <div class="field">
+        <label for="reason">Reason of Admission <span class="req">*</span></label>
+        <div class="select-wrap">
+          <select id="reason" onchange="toggleOther(this,'reasonOther')">
+            <option value="">— Select —</option>
+            <option value="Employment">Employment</option>
+            <option value="Study">Study</option>
+            <option value="Medical">Medical</option>
+            <option value="Other">Other</option>
+          </select>
+        </div>
+        <span class="field-msg" id="reason-msg"></span>
+        <input
+          type="text"
+          id="reasonOther"
+          class="other-input"
+          placeholder="Please specify…"
+          style="display:none"
+          aria-label="Other reason"
+        />
+        <span class="field-msg" id="reasonOther-msg"></span>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Contact Details</h2>
+
+      <div class="field">
+        <label for="email">Email Address <span class="req">*</span></label>
+        <input
+          type="email"
+          id="email"
+          inputmode="email"
+          autocomplete="email"
+          placeholder="name@example.com"
+        />
+        <span class="field-msg" id="email-msg"></span>
+      </div>
+
+      <div class="field">
+        <label for="phone">Phone Number <span class="req">*</span></label>
+        <input
+          type="tel"
+          id="phone"
+          inputmode="tel"
+          autocomplete="tel"
+          placeholder="0412 345 678"
+        />
+        <span class="field-msg" id="phone-msg"></span>
+      </div>
+
+      <div class="field">
+        <label for="position">Position / Occupation</label>
+        <input
+          type="text"
+          id="position"
+          autocomplete="organization-title"
+          placeholder="e.g. Senior Manager (optional)"
+        />
+        <span class="field-msg" id="position-msg"></span>
+      </div>
+    </div>
+
+    <button class="btn btn-primary" onclick="goToReview()">
+      Review Information →
+    </button>
+
+  </div><!-- /step-form -->
+
+
+  <!-- ══════════════════════════════════════
+       STEP 2 — Review
+  ═══════════════════════════════════════ -->
+  <div class="step-section" id="step-review">
+
+    <div class="card">
+      <h2>Review Your Information</h2>
+      <p style="font-size:.875rem;color:var(--gray-500);margin-bottom:14px;">
+        Please check everything carefully before generating your QR code.
+        Once generated, you cannot edit your details.
+      </p>
+      <div id="review-content"></div>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn btn-outline" onclick="goBackToForm()">
+        ← Edit
+      </button>
+      <button class="btn btn-success" onclick="generateQR()">
+        Generate QR →
+      </button>
+    </div>
+
+  </div><!-- /step-review -->
+
+
+  <!-- ══════════════════════════════════════
+       STEP 3 — QR Code
+  ═══════════════════════════════════════ -->
+  <div class="step-section" id="step-qr">
+
+    <div class="card qr-card">
+
+      <!-- Blinking "Take a screenshot" notice -->
+      <div class="blink-notice">
+        📸 Please take a screenshot now
+      </div>
+
+      <!-- Slot badge -->
+      <div class="slot-badge">
+        <span class="slot-prefix">Your Slot</span>
+        <span id="slot-time">--:--</span>
+      </div>
+
+      <!-- QR Code -->
+      <div id="qrcode-wrap"></div>
+
+      <!-- Instruction -->
+      <p class="qr-instruction">
+        Please wait until your slot number is called and then
+        show this QR code to the staff member at the counter.
+      </p>
+
+      <!-- Close warning -->
+      <div class="close-warning">
+        <span class="warn-icon">⚠️</span>
+        <span>
+          <strong>Do not close or refresh this page.</strong><br/>
+          Doing so will cancel your slot and you will need to re-register.
+        </span>
+      </div>
+
+    </div><!-- /card -->
+
+  </div><!-- /step-qr -->
+
+</div><!-- /page -->
+
+<div id="toast"></div>
+
+</body>
+</html>
