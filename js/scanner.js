@@ -272,21 +272,32 @@ function startScan() {
 
   html5QrCode.start(
     { facingMode: 'environment' },
-    { fps: 10, qrbox: { width: 100, height: 100 } },
+    {
+      fps: 15,
+      // qrbox as a function fills ~90% of the viewfinder at whatever
+      // resolution the library actually renders — works regardless of
+      // the CSS display size of the container.
+      qrbox: (w, h) => {
+        const side = Math.floor(Math.min(w, h) * 0.9);
+        return { width: side, height: side };
+      },
+      aspectRatio: 1.0,
+    },
     onScanSuccess,
-    () => { /* ignore frame errors */ }
+    () => { /* ignore per-frame decode errors */ }
   ).catch(err => {
     console.warn('Camera error:', err);
     stopScan();
     showToast('Camera unavailable — check permissions.');
   });
+  scanning = true;
 }
 
 function stopScan() {
-  if (html5QrCode && scanning) {
+  if (html5QrCode) {
     html5QrCode.stop().catch(() => {});
+    html5QrCode = null;
   }
-  html5QrCode = null;
   scanning = false;
 
   document.getElementById('btn-start-scan').disabled  = false;
