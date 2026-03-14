@@ -119,7 +119,7 @@ function populateForm(data) {
 
   // Time slot — parse the raw slot number to HH:MM for the field
   if (data.slot) {
-    const parsed = parseSlotNumber(data.slot);
+    const parsed = parseSlotNumber(String(data.slot));
     setInput('timeSlot', parsed ? parsed.time : '');
   }
 
@@ -491,13 +491,15 @@ function onScanSuccess(decodedText) {
   // Populate form
   populateForm(data);
 
-  // Update queue from slot
+  // Update queue from slot and set the Time Slot field
   const slotInfo = document.getElementById('scan-slot-info');
   if (data.slot) {
-    const parsed = parseSlotNumber(data.slot);
+    const parsed = parseSlotNumber(String(data.slot));
     if (parsed) {
       setNowServing(parsed.time, data.slot);
       slotInfo.textContent = `Slot: ${data.slot} · ${parsed.date} ${parsed.time}`;
+      const tsEl = document.getElementById('timeSlot');
+      if (tsEl) tsEl.value = parsed.time;
     } else {
       slotInfo.textContent = `Slot value: ${data.slot} (could not parse)`;
     }
