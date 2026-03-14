@@ -451,6 +451,10 @@ function onScanSuccess(decodedText) {
   beep();
   if (!usbMode) freezeCamera();
 
+  // Stop any ongoing announcement / auto-skip cycle
+  _announceSeq++;
+  if (window.speechSynthesis) window.speechSynthesis.cancel();
+
   console.log('[QR] raw decoded text:', decodedText);
 
   let data;
