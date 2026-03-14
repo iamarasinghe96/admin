@@ -337,6 +337,10 @@ function clearForm() {
 ───────────────────────────────────────────────────── */
 
 function startScan() {
+  // Stop any ongoing announcement / auto-skip cycle
+  _announceSeq++;
+  if (window.speechSynthesis) window.speechSynthesis.cancel();
+
   const readerEl = document.getElementById('qr-reader');
   if (!readerEl) return;
 
