@@ -120,7 +120,12 @@ function populateForm(data) {
   // Time slot — parse the raw slot number to HH:MM for the field
   if (data.slot) {
     const parsed = parseSlotNumber(String(data.slot));
-    setInput('timeSlot', parsed ? parsed.time : '');
+    if (parsed) {
+      setInput('timeSlot', parsed.time);
+      setValid('timeSlot');
+    } else {
+      setInput('timeSlot', '');
+    }
   }
 
   setSelect('applicationType', data.applicationType);
@@ -496,10 +501,13 @@ function onScanSuccess(decodedText) {
   if (data.slot) {
     const parsed = parseSlotNumber(String(data.slot));
     if (parsed) {
-      setNowServing(parsed.time, data.slot);
-      slotInfo.textContent = `Slot: ${data.slot} · ${parsed.date} ${parsed.time}`;
+      try { setNowServing(parsed.time, data.slot); } catch(e) { console.error('[QR] setNowServing error:', e); }
       const tsEl = document.getElementById('timeSlot');
-      if (tsEl) tsEl.value = parsed.time;
+      if (tsEl) {
+        tsEl.value = parsed.time;
+        setValid('timeSlot');
+      }
+      slotInfo.textContent = `Slot: ${data.slot} · ${parsed.date} ${parsed.time}${tsEl ? '' : ' · ⚠ timeSlot field not found'}`;
     } else {
       slotInfo.textContent = `Slot value: ${data.slot} (could not parse)`;
     }
