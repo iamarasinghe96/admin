@@ -10,6 +10,39 @@ let currentSlot  = null;   // "HH:MM" — Now Serving
 let queueSlots   = [];     // ["HH:MM", ...]  upcoming
 let autoSkip     = false;  // auto-advance after each announcement cycle
 let _announceSeq = 0;      // invalidates stale announcement callbacks
+let _scannedCustomer = null; // last scanned customer data (sent to display)
+
+/* ── Customer display push (SSE server) ───────────── */
+const DISPLAY_SERVER = 'http://localhost:3000';
+const FORM_FIELD_IDS = [
+  'applicationType','timeSlot','firstName','preferredFirstName',
+  'middleName','lastName','dob','reason','email','phone','position'
+];
+
+function getFormData() {
+  const out = {};
+  for (const id of FORM_FIELD_IDS) {
+    const el = document.getElementById(id);
+    if (el) out[id] = el.value || '';
+  }
+  return out;
+}
+
+function pushState(type, extra = {}) {
+  const state = {
+    type,
+    currentSlot,
+    queueSlots: [...queueSlots],
+    customer: _scannedCustomer,
+    formData: (type === 'editing') ? getFormData() : null,
+    ...extra
+  };
+  fetch(`${DISPLAY_SERVER}/push-state`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(state),
+  }).catch(() => { /* display server not running — silently ignore */ });
+}
 
 /* ── Beep (Web Audio API) ─────────────────────────── */
 function beep() {
@@ -504,6 +537,9 @@ function onScanSuccess(decodedText) {
   setTimeout(() => { flash.remove(); box.classList.remove('success'); }, 900);
 
   // Populate form
+  // Store scanned data for customer display
+  _scannedCustomer = { ...data };
+
   populateForm(data);
 
   // Update queue from slot and set the Time Slot field
@@ -543,6 +579,9 @@ function setNowServing(timeStr, rawSlot) {
   // Enable Next button
   const btn = document.getElementById('btn-next');
   if (btn) btn.disabled = false;
+
+  // Push to customer display (will include customer data if already scanned)
+  pushState('scanned');
 }
 
 function renderNowServing(timeStr, rawSlot) {
@@ -601,6 +640,10 @@ function proceedToNext() {
   void card.offsetWidth; // force reflow
   card.classList.add('announcing');
   setTimeout(() => card.classList.remove('announcing'), 3500);
+
+  // Clear customer card on display — new slot, new person
+  _scannedCustomer = null;
+  pushState('queue');
 }
 
 /* ── Text-to-speech announcement (repeats 3×) ────── */
@@ -744,4 +787,21 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Queue starts empty
   document.getElementById('btn-next').disabled = true;
+
+  // Push live form edits to the customer display
+  let _editDebounce = null;
+  for (const id of FORM_FIELD_IDS) {
+    const el = document.getElementById(id);
+    if (!el) continue;
+    el.addEventListener('input', () => {
+      if (!_scannedCustomer) return;   // no customer shown — nothing to mirror
+      clearTimeout(_editDebounce);
+      _editDebounce = setTimeout(() => pushState('editing'), 300);
+    });
+    el.addEventListener('change', () => {
+      if (!_scannedCustomer) return;
+      clearTimeout(_editDebounce);
+      _editDebounce = setTimeout(() => pushState('editing'), 300);
+    });
+  }
 });
