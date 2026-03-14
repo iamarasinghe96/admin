@@ -130,20 +130,21 @@
     .info-grid {
       display: grid;
       grid-template-columns: 1fr 1fr;
-      gap: 10px 18px;
+      gap: 16px 24px;
+      align-content: start;
     }
-    .info-item { display: flex; flex-direction: column; gap: 2px; }
+    .info-item { display: flex; flex-direction: column; gap: 4px; }
     .info-item .key {
-      font-size: .7rem;
+      font-size: .85rem;
       font-weight: 600;
       letter-spacing: .06em;
       text-transform: uppercase;
       color: var(--gray-400);
     }
     .info-item .val {
-      font-size: .9rem;
+      font-size: 1.25rem;
       color: var(--gray-800);
-      font-weight: 500;
+      font-weight: 600;
     }
     .info-item .val.changed {
       color: var(--amber);
@@ -158,19 +159,6 @@
       display: none;
     }
     .change-notice.visible { display: block; }
-
-    /* Message banner */
-    .message-banner {
-      background: #eff6ff;
-      border: 1px solid #bfdbfe;
-      border-radius: 12px;
-      padding: 16px 20px;
-      color: #1e40af;
-      font-size: .875rem;
-      line-height: 1.6;
-      flex-shrink: 0;
-    }
-    .message-banner strong { font-weight: 700; }
 
     /* ── Right col: queue ── */
     .right-col {
@@ -260,10 +248,6 @@
       font-size: 1.1rem;
       margin-top: 16px;
     }
-    .left-col.slot-active .message-banner {
-      display: none;
-    }
-
     /* Idle state */
     #idle-msg {
       flex: 1;
@@ -304,11 +288,6 @@
       <div class="info-grid" id="info-grid"></div>
     </div>
 
-    <!-- Permanent message banner -->
-    <div class="message-banner">
-      Your slot is decided by the time you generated the QR code.<br>
-      <strong>If you belong to the current 10-minute bracket, please come to the counter without waiting for your slot to be called.</strong>
-    </div>
 
   </div>
 
