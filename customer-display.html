@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
   <title>Queue Display</title>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -24,21 +24,24 @@
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
       background: var(--gray-50);
-      min-height: 100vh;
+      height: 100dvh;
+      max-height: 100dvh;
       display: flex;
       flex-direction: column;
+      overflow: hidden;
     }
 
     /* ── Header ── */
     header {
       background: var(--blue);
       color: #fff;
-      padding: 16px 24px;
+      padding: 10px 24px;
       display: flex;
       align-items: center;
       justify-content: space-between;
+      flex-shrink: 0;
     }
-    header h1 { font-size: 1.25rem; font-weight: 700; letter-spacing: -.01em; }
+    header h1 { font-size: 1.1rem; font-weight: 700; letter-spacing: -.01em; }
     #conn-dot {
       width: 10px; height: 10px; border-radius: 50%;
       background: #86efac; flex-shrink: 0;
@@ -50,49 +53,50 @@
     main {
       flex: 1;
       display: grid;
-      grid-template-columns: 1fr 340px;
+      grid-template-columns: 1fr 300px;
       gap: 0;
-      max-height: calc(100vh - 57px);
       overflow: hidden;
+      min-height: 0;
     }
 
     /* ── Left: now-serving + message ── */
     .left-col {
       display: flex;
       flex-direction: column;
-      padding: 28px 28px 28px 32px;
-      gap: 20px;
+      padding: 18px 20px 18px 24px;
+      gap: 14px;
       overflow-y: auto;
+      min-height: 0;
     }
 
     /* NOW SERVING hero */
     .now-serving-hero {
       background: linear-gradient(135deg, #1d4ed8 0%, #16a34a 100%);
-      border-radius: 20px;
-      padding: 36px 28px;
+      border-radius: 16px;
+      padding: 24px 24px;
       color: #fff;
       text-align: center;
       box-shadow: 0 8px 32px rgba(37,99,235,.25);
       flex-shrink: 0;
     }
     .now-serving-hero .label {
-      font-size: .8rem;
+      font-size: .75rem;
       font-weight: 600;
       letter-spacing: .12em;
       text-transform: uppercase;
       opacity: .8;
-      margin-bottom: 6px;
+      margin-bottom: 4px;
     }
     .now-serving-hero .time {
-      font-size: 5rem;
+      font-size: 4rem;
       font-weight: 800;
       letter-spacing: -.03em;
       line-height: 1;
     }
     .now-serving-hero .sub {
-      font-size: .875rem;
+      font-size: .8rem;
       opacity: .75;
-      margin-top: 8px;
+      margin-top: 6px;
     }
     @keyframes pulse-hero {
       0%   { box-shadow: 0 8px 32px rgba(37,99,235,.25); }
@@ -106,11 +110,14 @@
       background: #fff;
       border: 1px solid var(--gray-200);
       border-radius: 14px;
-      padding: 22px 24px;
+      padding: 14px 16px;
       display: none;
       flex-direction: column;
-      gap: 14px;
+      gap: 10px;
       box-shadow: 0 2px 8px rgba(0,0,0,.06);
+      flex: 1;
+      overflow-y: auto;
+      min-height: 0;
     }
     #customer-card.visible { display: flex; }
     #customer-card h2 {
@@ -171,9 +178,10 @@
       border-left: 1px solid var(--gray-200);
       display: flex;
       flex-direction: column;
-      padding: 20px 16px;
-      gap: 14px;
+      padding: 14px 12px;
+      gap: 10px;
       overflow-y: auto;
+      min-height: 0;
     }
     .right-col h2 {
       font-size: .875rem;
@@ -225,6 +233,36 @@
     .badge-next    { background: #dcfce7; color: #15803d; }
     .badge-waiting { background: var(--gray-100); color: var(--gray-600); }
     .dq-delta { font-size: .7rem; color: var(--gray-400); }
+
+    /* ── Slot-active: hero fills the whole left column ── */
+    .left-col.slot-active {
+      padding: 0;
+    }
+    .left-col.slot-active .now-serving-hero {
+      flex: 1;
+      border-radius: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 0;
+      box-shadow: none;
+    }
+    .left-col.slot-active .now-serving-hero .label {
+      font-size: 1.1rem;
+      letter-spacing: .18em;
+    }
+    .left-col.slot-active .now-serving-hero .time {
+      font-size: clamp(6rem, 18vh, 12rem);
+      letter-spacing: -.04em;
+    }
+    .left-col.slot-active .now-serving-hero .sub {
+      font-size: 1.1rem;
+      margin-top: 16px;
+    }
+    .left-col.slot-active .message-banner {
+      display: none;
+    }
 
     /* Idle state */
     #idle-msg {
@@ -331,6 +369,7 @@ const statServing   = document.getElementById('stat-serving');
 const statNext      = document.getElementById('stat-next');
 const queueList     = document.getElementById('display-queue-list');
 const connDot       = document.getElementById('conn-dot');
+const leftCol       = document.querySelector('.left-col');
 
 /* ── Render queue panel ── */
 function renderQueue(currentSlot, queueSlots) {
@@ -420,8 +459,10 @@ function applyState(state) {
 
   if (state.type === 'scanned' || state.type === 'editing') {
     renderCustomerCard(state.customer, state.formData);
+    leftCol.classList.remove('slot-active');
   } else if (state.type === 'queue' || state.type === 'idle') {
     renderCustomerCard(null, null);
+    leftCol.classList.toggle('slot-active', state.type === 'queue' && !!state.currentSlot);
   }
 
   // Pulse hero when queue advances
