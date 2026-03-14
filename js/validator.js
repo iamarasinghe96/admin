@@ -164,8 +164,14 @@ function timeToWords(hhmm) {
   ];
   const tens = ['','','twenty','thirty','forty','fifty'];
 
-  const display12 = h % 12 || 12;
-  const hourWord  = ones[display12];
+  let hourWord;
+  if (h < 20) {
+    hourWord = ones[h];
+  } else {
+    const t = Math.floor(h / 10);
+    const o = h % 10;
+    hourWord = tens[t] + (o ? ' ' + ones[o] : '');
+  }
 
   let minWord;
   if (m === 0) {
