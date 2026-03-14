@@ -528,6 +528,7 @@ function setNowServing(timeStr, rawSlot) {
 
   renderNowServing(timeStr, rawSlot);
   renderQueue();
+  if (typeof updateQueueStats === 'function') updateQueueStats();
 
   // Enable Next button
   const btn = document.getElementById('btn-next');

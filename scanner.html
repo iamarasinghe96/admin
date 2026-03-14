@@ -592,12 +592,6 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 });
 
-/* Patch renderNowServing to also update stats */
-const _orig_renderNowServing = renderNowServing;
-function renderNowServing(timeStr, rawSlot) {
-  _orig_renderNowServing(timeStr, rawSlot);
-  updateQueueStats();
-}
 </script>
 
 </body>
