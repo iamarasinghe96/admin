@@ -79,22 +79,34 @@ function clearValidation(fieldId) {
 
 /* ── Populate form from scanned QR data ──────────── */
 function populateForm(data) {
-  const set = (id, val) => {
+  // For <input> fields: set value directly.
+  // For <select> fields: if the value isn't a recognised option, fall back to
+  // "Other" so the field isn't silently left empty (e.g. applicationType from
+  // a custom "Other" entry in the registration app).
+  const setInput = (id, val) => {
     const el = document.getElementById(id);
     if (el) el.value = val || '';
   };
 
-  // Auto-capitalize names
-  set('applicationType',    data.applicationType || '');
-  set('firstName',          toTitleCase(data.firstName || ''));
-  set('preferredFirstName', toTitleCase(data.preferredFirstName || ''));
-  set('middleName',         toTitleCase(data.middleName || ''));
-  set('lastName',           toTitleCase(data.lastName || ''));
-  set('dob',                data.dob || '');
-  set('reason',             data.reason || '');
-  set('email',              (data.email || '').toLowerCase().trim());
-  set('phone',              data.phone || '');
-  set('position',           toTitleCase(data.position || ''));
+  const setSelect = (id, val) => {
+    const el = document.getElementById(id);
+    if (!el || !val) return;
+    const match = Array.from(el.options).some(o => o.value === val);
+    el.value = match ? val : 'Other';
+    // If we fell back to Other, log it so it's easy to spot
+    if (!match) console.log(`[QR] select #${id}: "${val}" not in options, set to Other`);
+  };
+
+  setSelect('applicationType', data.applicationType);
+  setInput('firstName',          toTitleCase(data.firstName || ''));
+  setInput('preferredFirstName', toTitleCase(data.preferredFirstName || ''));
+  setInput('middleName',         toTitleCase(data.middleName || ''));
+  setInput('lastName',           toTitleCase(data.lastName || ''));
+  setInput('dob',                data.dob || '');
+  setSelect('reason',            data.reason);
+  setInput('email',              (data.email || '').toLowerCase().trim());
+  setInput('phone',              data.phone || '');
+  setInput('position',           toTitleCase(data.position || ''));
 
   // Run all validations after populating
   validateAllFields();
@@ -274,14 +286,9 @@ function startScan() {
     { facingMode: 'environment' },
     {
       fps: 15,
-      // qrbox as a function fills ~90% of the viewfinder at whatever
-      // resolution the library actually renders — works regardless of
-      // the CSS display size of the container.
-      qrbox: (w, h) => {
-        const side = Math.floor(Math.min(w, h) * 0.9);
-        return { width: side, height: side };
-      },
-      aspectRatio: 1.0,
+      // No qrbox → scan the entire camera frame.
+      // No aspectRatio override → use native 16:9 camera feed so the
+      // display and detection coordinate space stay in sync.
     },
     onScanSuccess,
     () => { /* ignore per-frame decode errors */ }
@@ -324,14 +331,18 @@ function onScanSuccess(decodedText) {
   beep();
   freezeCamera();
 
+  console.log('[QR] raw decoded text:', decodedText);
+
   let data;
   try {
     // Primary format: JSON (new registration app)
     data = JSON.parse(decodedText);
+    console.log('[QR] parsed as JSON:', data);
   } catch {
     // Fallback: tab-separated format (legacy registration app)
     // Format: slot\tappType\tfirstName\tprefFirstName\tmiddleName\tlastName\tDOB\treason\temail\tphone\tposition
     const parts = decodedText.split('\t');
+    console.log('[QR] not JSON, tab parts:', parts.length, parts);
     if (parts.length >= 10) {
       data = {
         slot:               parts[0] || '',
@@ -347,7 +358,10 @@ function onScanSuccess(decodedText) {
         position:           parts[10] || '',
       };
     } else {
-      showToast('Unrecognised QR code format.');
+      // Show raw text so staff can see what was decoded
+      document.getElementById('scan-slot-info').textContent =
+        'Unknown format — raw: ' + decodedText.substring(0, 80);
+      showToast('Unrecognised QR format — check console.');
       return;
     }
   }
@@ -365,13 +379,17 @@ function onScanSuccess(decodedText) {
   populateForm(data);
 
   // Update queue from slot
+  const slotInfo = document.getElementById('scan-slot-info');
   if (data.slot) {
     const parsed = parseSlotNumber(data.slot);
     if (parsed) {
       setNowServing(parsed.time, data.slot);
-      document.getElementById('scan-slot-info').textContent =
-        `Slot: ${data.slot} · ${parsed.date} ${parsed.time}`;
+      slotInfo.textContent = `Slot: ${data.slot} · ${parsed.date} ${parsed.time}`;
+    } else {
+      slotInfo.textContent = `Slot value: ${data.slot} (could not parse)`;
     }
+  } else {
+    slotInfo.textContent = `No slot in QR — name: ${data.firstName || '?'} ${data.lastName || '?'}`;
   }
 
   showToast('QR scanned successfully!');

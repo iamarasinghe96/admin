@@ -19,18 +19,15 @@
 
     .scanner-section .panel-body { padding-bottom: 12px; }
 
-    /*
-     * The scanner-box is a small 160×160 viewport window.
-     * #qr-reader runs at 300×300 inside (off-screen overflow hidden),
-     * so the library does full-quality detection while only a small
-     * preview is visible to the user.
-     */
+    /* Small 16:9 preview — matches native camera aspect ratio so the
+       library's coordinate system is correct. No qrbox restriction means
+       the full camera frame is used for detection. */
     #scanner-box {
       border: 2px dashed var(--gray-300);
       border-radius: var(--radius-lg);
       background: var(--gray-50);
-      width: 160px;
-      height: 160px;
+      width: 256px;
+      aspect-ratio: 16 / 9;   /* height = 144px */
       position: relative;
       overflow: hidden;
       flex-shrink: 0;
@@ -39,19 +36,10 @@
     #scanner-box.active  { border-color: var(--primary); border-style: solid; background: #000; }
     #scanner-box.success { border-color: var(--success); background: var(--success-light); }
 
-    /* Library container: centred inside the box, larger than the box so it
-       fills it edge-to-edge. Overflow is clipped by scanner-box. */
     #qr-reader {
       position: absolute;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      width: 300px;
-      height: 300px;
+      inset: 0;
     }
-
-    /* Let the library control the video element — do NOT force-resize it.
-       Only ensure it fills the library's own container. */
     #qr-reader video {
       width: 100% !important;
       height: 100% !important;
