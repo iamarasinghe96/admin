@@ -12,17 +12,35 @@ let queueSlots   = [];     // ["HH:MM", ...]  upcoming
 function beep() {
   try {
     const ctx  = new (window.AudioContext || window.webkitAudioContext)();
-    const osc  = ctx.createOscillator();
-    const gain = ctx.createGain();
-    osc.connect(gain);
-    gain.connect(ctx.destination);
-    osc.type            = 'sine';
-    osc.frequency.value = 1046;  // C6 — clear, sharp beep
-    gain.gain.setValueAtTime(0.35, ctx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.18);
-    osc.start(ctx.currentTime);
-    osc.stop(ctx.currentTime + 0.18);
-    osc.onended = () => ctx.close();
+    const t    = ctx.currentTime;
+
+    // First short beep — barcode scanner style
+    const osc1  = ctx.createOscillator();
+    const gain1 = ctx.createGain();
+    osc1.connect(gain1);
+    gain1.connect(ctx.destination);
+    osc1.type            = 'square';
+    osc1.frequency.value = 3800;          // high-pitched buzzer tone
+    gain1.gain.setValueAtTime(0.18, t);
+    gain1.gain.setValueAtTime(0.18, t + 0.07);
+    gain1.gain.linearRampToValueAtTime(0, t + 0.09);
+    osc1.start(t);
+    osc1.stop(t + 0.09);
+
+    // Second short beep (classic double-beep of a scanner)
+    const osc2  = ctx.createOscillator();
+    const gain2 = ctx.createGain();
+    osc2.connect(gain2);
+    gain2.connect(ctx.destination);
+    osc2.type            = 'square';
+    osc2.frequency.value = 3800;
+    gain2.gain.setValueAtTime(0, t + 0.12);
+    gain2.gain.setValueAtTime(0.18, t + 0.12);
+    gain2.gain.setValueAtTime(0.18, t + 0.19);
+    gain2.gain.linearRampToValueAtTime(0, t + 0.21);
+    osc2.start(t + 0.12);
+    osc2.stop(t + 0.21);
+    osc2.onended = () => ctx.close();
   } catch (e) { /* audio not available */ }
 }
 
