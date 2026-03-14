@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Staff Interface — QR Queue System</title>
+  <link rel="stylesheet" href="css/style.css"/>
+  <!-- QR Scanner library -->
+  <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+  <script src="js/validator.js"></script>
+  <script src="js/scanner.js"></script>
+
+  <style>
+    /* ── Extra styles specific to scanner.html ─── */
+
+    .scanner-section {
+      margin-bottom: 20px;
+    }
+
+    .scanner-section .panel-body { padding-bottom: 12px; }
+
+    #scanner-box {
+      border: 2px dashed var(--gray-300);
+      border-radius: var(--radius-lg);
+      background: var(--gray-50);
+      min-height: 180px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      gap: 8px;
+      padding: 12px;
+      position: relative;
+      overflow: hidden;
+      transition: border-color .18s, background .18s;
+    }
+    #scanner-box.active  { border-color: var(--primary); border-style: solid; background: #eff6ff; }
+    #scanner-box.success { border-color: var(--success); background: var(--success-light); }
+
+    #qr-reader { width: 100%; }
+    #qr-reader video { border-radius: var(--radius); width: 100% !important; max-height: 200px; object-fit: cover; }
+
+    /* suppress library default UI */
+    #qr-reader > img,
+    #qr-reader__status_span,
+    #qr-reader__camera_permission_button,
+    #qr-reader__filescan_input,
+    #qr-reader__header_message,
+    #qr-reader__dashboard_section_csr,
+    #qr-reader__dashboard_section_fsr,
+    #qr-reader__dashboard_section_swaplink { display: none !important; }
+
+    #scan-placeholder { text-align: center; color: var(--gray-400); }
+    #scan-placeholder .big-icon { font-size: 2.8rem; display:block; margin-bottom:6px; }
+
+    .scan-controls { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
+
+    #scan-slot-info {
+      font-size: .78rem;
+      color: var(--gray-500);
+      margin-top: 8px;
+      min-height: 18px;
+      text-align: center;
+    }
+
+    /* ── Form layout inside left panel ───── */
+    .form-panel .panel-body { padding: 16px 20px 20px; }
+
+    .names-section-label {
+      font-size: .75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .06em;
+      color: var(--gray-400);
+      margin: 14px 0 8px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .inline-names {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 10px;
+    }
+
+    .inline-names .field { min-width: 0; }
+
+    .field { margin-bottom: 0; }
+
+    .form-row-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .form-stacked { display: flex; flex-direction: column; gap: 12px; }
+
+    .last-name-row { display: grid; grid-template-columns: 1fr; }
+
+    /* ── Excel copy row ──────────────── */
+    .excel-bar {
+      margin-top: 16px;
+      padding-top: 14px;
+      border-top: 1px solid var(--gray-200);
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .excel-preview {
+      font-family: monospace;
+      font-size: .72rem;
+      background: var(--gray-100);
+      border: 1px solid var(--gray-200);
+      border-radius: 5px;
+      padding: 5px 10px;
+      color: var(--gray-500);
+      flex: 1;
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    /* ── Queue panel extras ──────────── */
+    .queue-stats {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 14px;
+    }
+
+    .stat-chip {
+      flex: 1;
+      background: var(--gray-50);
+      border: 1px solid var(--gray-200);
+      border-radius: 8px;
+      padding: 8px 10px;
+      text-align: center;
+    }
+
+    .stat-chip .val {
+      font-size: 1.1rem;
+      font-weight: 800;
+      color: var(--primary);
+    }
+
+    .stat-chip .lbl {
+      font-size: .68rem;
+      color: var(--gray-400);
+      text-transform: uppercase;
+      letter-spacing: .05em;
+    }
+
+    .queue-actions-row {
+      display: flex;
+      gap: 8px;
+      margin-top: 10px;
+    }
+
+    .queue-actions-row .btn { flex: 1; font-size: .82rem; }
+
+    @media (max-width: 820px) {
+      .inline-names { grid-template-columns: 1fr 1fr; }
+    }
+    @media (max-width: 540px) {
+      .inline-names, .form-row-2 { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ── Header ──────────────────────────────────────── -->
+<header>
+  <h1>
+    <span class="logo-icon">⬛</span>
+    <span class="title-text">QR Queue System</span>
+  </h1>
+  <nav class="header-nav">
+    <a href="index.html"   class="nav-link">Customer Registration</a>
+    <a href="scanner.html" class="nav-link active">Staff Interface</a>
+  </nav>
+</header>
+
+<main style="padding:16px;">
+<div class="two-panel">
+
+  <!-- ══════════════════════════════════════════════
+       LEFT PANEL — Scanner + Form
+  ═══════════════════════════════════════════════ -->
+  <div>
+
+    <!-- Scanner section -->
+    <div class="panel scanner-section" style="margin-bottom:16px;">
+      <div class="panel-header">
+        <span class="icon">📷</span>
+        <h2>QR Code Scanner</h2>
+      </div>
+      <div class="panel-body">
+        <div id="scanner-box">
+          <div id="scan-placeholder">
+            <span class="big-icon">⬛</span>
+            <p style="font-size:.875rem;color:var(--gray-500);">Camera is off — click <strong>Start Scan</strong> to begin</p>
+          </div>
+          <div id="qr-reader"></div>
+        </div>
+
+        <div class="scan-controls">
+          <button id="btn-start-scan" class="btn btn-primary btn-sm" onclick="startScan()">
+            ▶ Start Scan
+          </button>
+          <button id="btn-stop-scan" class="btn btn-outline btn-sm" onclick="stopScan()" disabled>
+            ■ Stop
+          </button>
+          <button class="btn btn-outline btn-sm" onclick="setCurrentTime()" title="Set queue to current system time">
+            🕐 Set Current Time
+          </button>
+        </div>
+
+        <div id="scan-slot-info"></div>
+      </div>
+    </div>
+
+    <!-- Form section -->
+    <div class="panel form-panel">
+      <div class="panel-header">
+        <span class="icon">📋</span>
+        <h2>Application Details</h2>
+      </div>
+      <div class="panel-body">
+
+        <form id="applicant-form" onsubmit="return false;" autocomplete="off">
+
+          <!-- Row: Application Type -->
+          <div class="field" id="applicationType-wrap" style="margin-bottom:12px;">
+            <label for="applicationType">Application Type <span class="required">*</span></label>
+            <select id="applicationType">
+              <option value="">— Select —</option>
+              <option value="Permanent">Permanent</option>
+              <option value="Temporary">Temporary</option>
+              <option value="Other">Other</option>
+            </select>
+            <span class="field-msg" id="applicationType-msg"></span>
+          </div>
+
+          <!-- Names section -->
+          <div class="names-section-label">
+            Name Details
+            <button type="button" class="btn btn-outline btn-sm" onclick="copyNames()" title="Copy First, Preferred, Middle and Last names">
+              📋 Copy Names
+            </button>
+          </div>
+
+          <div class="inline-names" style="margin-bottom:10px;">
+            <div class="field" id="firstName-wrap">
+              <label for="firstName">First Name <span class="required">*</span></label>
+              <input type="text" id="firstName" placeholder="First" spellcheck="false"/>
+              <span class="field-msg" id="firstName-msg"></span>
+            </div>
+            <div class="field" id="preferredFirstName-wrap">
+              <label for="preferredFirstName">Preferred First</label>
+              <input type="text" id="preferredFirstName" placeholder="Preferred" spellcheck="false"/>
+              <span class="field-msg" id="preferredFirstName-msg"></span>
+            </div>
+            <div class="field" id="middleName-wrap">
+              <label for="middleName">Middle Name</label>
+              <input type="text" id="middleName" placeholder="Middle" spellcheck="false"/>
+              <span class="field-msg" id="middleName-msg"></span>
+            </div>
+          </div>
+
+          <div class="field" id="lastName-wrap" style="margin-bottom:12px;">
+            <label for="lastName">Last Name <span class="required">*</span></label>
+            <input type="text" id="lastName" placeholder="Last Name" spellcheck="false"/>
+            <span class="field-msg" id="lastName-msg"></span>
+          </div>
+
+          <!-- Row: DOB + Reason -->
+          <div class="form-row-2" style="margin-bottom:12px;">
+            <div class="field" id="dob-wrap">
+              <label for="dob">Date of Birth <span class="required">*</span> <small style="font-weight:400;color:var(--gray-400)">(DD/MM/YYYY)</small></label>
+              <input type="text" id="dob" placeholder="15/03/1985" maxlength="10"/>
+              <span class="field-msg" id="dob-msg"></span>
+            </div>
+            <div class="field" id="reason-wrap">
+              <label for="reason">Reason of Admission <span class="required">*</span></label>
+              <select id="reason">
+                <option value="">— Select —</option>
+                <option value="Employment">Employment</option>
+                <option value="Study">Study</option>
+                <option value="Medical">Medical</option>
+                <option value="Other">Other</option>
+              </select>
+              <span class="field-msg" id="reason-msg"></span>
+            </div>
+          </div>
+
+          <!-- Row: Email + Phone -->
+          <div class="form-row-2" style="margin-bottom:12px;">
+            <div class="field" id="email-wrap">
+              <label for="email">Email <span class="required">*</span></label>
+              <input type="email" id="email" placeholder="name@example.com"/>
+              <span class="field-msg" id="email-msg"></span>
+            </div>
+            <div class="field" id="phone-wrap">
+              <label for="phone">Phone Number <span class="required">*</span></label>
+              <input type="tel" id="phone" placeholder="0412 345 678"/>
+              <span class="field-msg" id="phone-msg"></span>
+            </div>
+          </div>
+
+          <!-- Row: Position -->
+          <div class="field" id="position-wrap" style="margin-bottom:16px;">
+            <label for="position">Position / Occupation</label>
+            <input type="text" id="position" placeholder="e.g. Senior Manager" spellcheck="true"/>
+            <span class="field-msg" id="position-msg"></span>
+          </div>
+
+          <!-- Excel copy bar -->
+          <div class="excel-bar">
+            <div class="excel-preview" id="excel-preview" title="Tab-separated preview">
+              Fill in the form to preview...
+            </div>
+            <button type="button" class="btn btn-copy-excel" onclick="copyToExcel(); updateExcelPreview();">
+              📋 Copy to Excel
+            </button>
+            <button type="button" class="btn btn-outline btn-sm" onclick="clearForm()" title="Clear all fields">
+              🗑 Clear
+            </button>
+          </div>
+
+        </form>
+
+      </div><!-- /panel-body -->
+    </div><!-- /form-panel -->
+
+  </div><!-- /left -->
+
+
+  <!-- ══════════════════════════════════════════════
+       RIGHT PANEL — Queue Management
+  ═══════════════════════════════════════════════ -->
+  <div class="panel queue-panel">
+    <div class="panel-header">
+      <span class="icon">🕐</span>
+      <h2>Queue Management</h2>
+    </div>
+    <div class="panel-body">
+
+      <!-- Stats -->
+      <div class="queue-stats">
+        <div class="stat-chip">
+          <div class="val" id="stat-serving" style="color:var(--success)">--:--</div>
+          <div class="lbl">Serving</div>
+        </div>
+        <div class="stat-chip">
+          <div class="val" id="stat-next">--:--</div>
+          <div class="lbl">Next Up</div>
+        </div>
+        <div class="stat-chip">
+          <div class="val" id="stat-count">10</div>
+          <div class="lbl">In Queue</div>
+        </div>
+      </div>
+
+      <!-- Now Serving -->
+      <div class="now-serving-card now-serving-empty" id="now-serving-card">
+        <div class="now-serving-label">NOW SERVING</div>
+        <div class="now-serving-time" id="serving-time">--:--</div>
+        <div class="now-serving-sub" id="serving-sub">Scan a QR code to begin</div>
+      </div>
+
+      <!-- Upcoming queue -->
+      <div style="font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--gray-400);margin-bottom:8px;">
+        Upcoming Slots
+      </div>
+      <div class="queue-list" id="queue-list">
+        <!-- Populated by JS -->
+        <div style="text-align:center;color:var(--gray-400);padding:24px 0;font-size:.875rem;">
+          No queue yet — scan a QR code or set current time
+        </div>
+      </div>
+
+      <!-- Primary action -->
+      <button
+        id="btn-next"
+        class="btn btn-next"
+        onclick="proceedToNext(); updateQueueStats();"
+        disabled
+      >
+        Proceed to Next Slot →
+      </button>
+
+      <!-- Secondary actions -->
+      <div class="queue-actions-row">
+        <button class="btn btn-outline btn-sm" onclick="reAnnounce()" title="Re-play the current slot announcement">
+          🔊 Re-announce
+        </button>
+        <button class="btn btn-outline btn-sm" onclick="setCurrentTime(); updateQueueStats();" title="Reset queue to current time">
+          🕐 Reset to Now
+        </button>
+      </div>
+
+      <!-- How-to hint -->
+      <p style="margin-top:14px;font-size:.75rem;color:var(--gray-400);line-height:1.5;">
+        Scan a customer QR code to set the current slot. Click
+        <em>Proceed to Next Slot</em> to advance the queue and trigger an audio announcement.
+      </p>
+
+    </div><!-- /panel-body -->
+  </div><!-- /queue-panel -->
+
+</div><!-- /two-panel -->
+</main>
+
+<div id="toast"></div>
+
+<script>
+/* ── Update Excel preview bar live ──────────────── */
+function updateExcelPreview() {
+  const val = id => (document.getElementById(id)?.value || '').trim();
+  const row = [
+    val('applicationType'),
+    val('firstName'),
+    val('preferredFirstName'),
+    val('middleName'),
+    val('lastName'),
+    val('dob'),
+    val('reason'),
+    val('email'),
+    val('phone'),
+    val('position'),
+  ].join('\t');
+
+  const preview = document.getElementById('excel-preview');
+  if (preview) {
+    preview.textContent = row.replace(/\t/g, ' | ') || 'Fill in the form to preview...';
+    preview.title = row;
+  }
+}
+
+/* ── Update queue stats ──────────────────────────── */
+function updateQueueStats() {
+  const statServing = document.getElementById('stat-serving');
+  const statNext    = document.getElementById('stat-next');
+  const statCount   = document.getElementById('stat-count');
+
+  if (currentSlot) {
+    if (statServing) statServing.textContent = currentSlot;
+    if (statNext)    statNext.textContent    = queueSlots[0] || '--:--';
+    if (statCount)   statCount.textContent   = queueSlots.length;
+  }
+}
+
+/* ── Attach live preview update ──────────────────── */
+document.addEventListener('DOMContentLoaded', () => {
+  const ids = [
+    'applicationType','firstName','preferredFirstName',
+    'middleName','lastName','dob','reason','email','phone','position'
+  ];
+  ids.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.addEventListener('input',  updateExcelPreview);
+    if (el) el.addEventListener('change', updateExcelPreview);
+  });
+});
+
+/* Patch renderNowServing to also update stats */
+const _orig_renderNowServing = renderNowServing;
+function renderNowServing(timeStr, rawSlot) {
+  _orig_renderNowServing(timeStr, rawSlot);
+  updateQueueStats();
+}
+</script>
+
+</body>
+</html>
