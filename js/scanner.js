@@ -8,6 +8,24 @@ let scanning     = false;
 let currentSlot  = null;   // "HH:MM" — Now Serving
 let queueSlots   = [];     // ["HH:MM", ...]  upcoming
 
+/* ── Beep (Web Audio API) ─────────────────────────── */
+function beep() {
+  try {
+    const ctx  = new (window.AudioContext || window.webkitAudioContext)();
+    const osc  = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.type            = 'sine';
+    osc.frequency.value = 1046;  // C6 — clear, sharp beep
+    gain.gain.setValueAtTime(0.35, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.18);
+    osc.start(ctx.currentTime);
+    osc.stop(ctx.currentTime + 0.18);
+    osc.onended = () => ctx.close();
+  } catch (e) { /* audio not available */ }
+}
+
 /* ── Field IDs ────────────────────────────────────── */
 const FIELDS = [
   'applicationType','firstName','preferredFirstName',
@@ -254,7 +272,7 @@ function startScan() {
 
   html5QrCode.start(
     { facingMode: 'environment' },
-    { fps: 10, qrbox: { width: 240, height: 240 }, aspectRatio: 1.0 },
+    { fps: 10, qrbox: { width: 200, height: 200 } },
     onScanSuccess,
     () => { /* ignore frame errors */ }
   ).catch(err => {
@@ -276,8 +294,24 @@ function stopScan() {
   document.getElementById('scanner-box')?.classList.remove('active');
 }
 
+function freezeCamera() {
+  // Pause the video feed visually — camera stays open but frame is frozen
+  const video = document.querySelector('#qr-reader video');
+  if (video) video.pause();
+
+  // Stop the html5QrCode scanning loop (releases CPU) but keep video element visible
+  if (html5QrCode) {
+    html5QrCode.stop().catch(() => {});
+  }
+  scanning = false;
+  document.getElementById('btn-start-scan').disabled = false;
+  document.getElementById('btn-stop-scan').disabled  = true;
+  document.getElementById('scanner-box')?.classList.remove('active');
+}
+
 function onScanSuccess(decodedText) {
-  stopScan();
+  beep();
+  freezeCamera();
 
   let data;
   try {
